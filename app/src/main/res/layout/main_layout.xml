@@ -10,7 +10,7 @@
         android:id="@+id/make_item"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Button" />
+        android:text="Reset Button" />
 
     <TextView
         android:id="@+id/textView"
@@ -22,7 +22,7 @@
         android:id="@+id/imageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@android:color/holo_blue_light"
+        android:background="@drawable/my_border"
         app:srcCompat="@android:color/holo_blue_dark" />
 
 </LinearLayout>
