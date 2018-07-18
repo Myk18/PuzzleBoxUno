@@ -1,25 +1,23 @@
 package ua.cn.sandi.puzzleboxuno;
 
 import android.app.Activity;
-import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Rect;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.transition.TransitionManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Button;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by mikni on 03.10.2017.
@@ -27,11 +25,15 @@ import android.widget.Toast;
 
 public class PuzzleBoxUno extends Activity implements View.OnTouchListener {
 
-    Button mi;
+    ImageButton mi;
 
     ImageView iv;
+    ImageView iv_k;
+    ImageView iv_p;
 
     TextView tv;
+    TextView tvp;
+    TextView tvk;
 
     float x;
     float y;
@@ -50,67 +52,85 @@ public class PuzzleBoxUno extends Activity implements View.OnTouchListener {
 
     Puzzle pz;
 
+    public void setImg(int img) {
+        this.img = img;
+    }
+
+    public int getImg() {
+        return img;
+    }
+
+    int img;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main_layout);
 
         h = new Handler();
-/*
-        Thread t = new Thread(new Runnable() {
-            public void run() {
-                Looper.prepare();
-                    h = new Handler();
-                Looper.loop();
-            }});
-        t.start();
-*/
-        mi = (Button) findViewById(R.id.make_item);
-        tv = (TextView) findViewById(R.id.textView);
-        iv = (ImageView) findViewById(R.id.imageView);
 
-        iv.setOnTouchListener(this);
+        // layout splashscreen
+        // setContentView(R.layout.main_splash);
 
-        // start button
-        mi.setOnClickListener(new View.OnClickListener() {  // buttonclick
+        // layout menu
+        setContentView(R.layout.main_img);
+        // strart
+
+        final ViewGroup sceneRoot = (ViewGroup) findViewById(R.id.container);
+        final View square = sceneRoot.findViewById(R.id.transition_square);
+
+        final int newSquareSize = getResources().getDimensionPixelSize(R.dimen.square_size_expanded);
+        final int oldSquareSize = getResources().getDimensionPixelSize(R.dimen.square_size_normal);
+
+
+        sceneRoot.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                iv.post(new Runnable() {
+                ViewGroup.LayoutParams params = square.getLayoutParams();
+                TransitionManager.beginDelayedTransition(sceneRoot);  // api 19
+                if (params.width == oldSquareSize) {
+                    params.width = newSquareSize;
+                    params.height = newSquareSize;
+                }else if(params.width == newSquareSize){
+                    params.width = oldSquareSize;
+                    params.height = oldSquareSize;
+                }
+                square.setLayoutParams(params); // set
+            }
+            });
+
+        // end
+        iv_p = (ImageView) findViewById(R.id.imageView_puffy);
+        iv_k = (ImageView) findViewById(R.id.imageView_kitty);
+        tvp = (TextView) findViewById(R.id.textView_p);
+        tvk = (TextView) findViewById(R.id.textView_k);
+
+        tvp.setOnClickListener(new OnClickListener() {  // buttonclick
+
+            @Override
+            public void onClick(View v) {
+                tvp.post(new Runnable() {
+                    @Override   // works w/o
                     public void run() {
-                        // code here   REFRESH
-
-                        ivw = iv.getWidth();
-                        ivh = iv.getHeight();
-
-                        pz = new Puzzle(iv, 4);
-
-
+                        setImg(R.drawable.img01); // puffy res
+                        StartMain();
                     }
                 });
             }
         });
 
-        iv.post(new Runnable() {
-            public void run() {
-                // code here   REFRESH
-
-                ivw = iv.getWidth();
-                ivh = iv.getHeight();
-
-                pz = new Puzzle(iv, 4);
-            }
-        });
-
-/*  dont get ivw ivh
-        h.post(new Runnable() {
+        tvk.setOnClickListener(new OnClickListener() {  // buttonclick
             @Override
-            public void run() {
-                ivw = iv.getWidth();
-                ivh = iv.getHeight();
-                pz = new Puzzle(iv,4);
+            public void onClick(View v) {
+                tvk.post(new Runnable() {
+                    @Override   // works w/o
+                    public void run() {
+                        setImg(R.drawable.img02); // kitty res
+                        StartMain();
+                    }
+                });
             }
         });
-        */
 
     }
 
@@ -135,24 +155,13 @@ public class PuzzleBoxUno extends Activity implements View.OnTouchListener {
             case MotionEvent.ACTION_UP:
                 sUp = "Tup: x=" + x + ", y=" + y;
 
-
-/*    WORKS
-                    runOnUiThread(new Runnable() {
-                        public void run() {
-                            pz.selectItem((int)x,(int)y);
-                        }
-                    });
-*/
+                //   select and replace GItems
                 h.post(new Runnable() {
-
                     @Override
                     public void run() {
-                        pz.selectItem((int) x, (int) y, (int) sx, (int) sy);  //   new    2 items
-                        //   pz.selectItem((int)x,(int)y);    // old 1 item
+                        pz.selectGItem(PuzzleBoxUno.this,(int) x, (int) y, (int) sx, (int) sy);  //   new    2 items
                     }
-
                 });
-
 
                 break;
         }
@@ -162,23 +171,22 @@ public class PuzzleBoxUno extends Activity implements View.OnTouchListener {
 
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.mymenu, menu);
+
+
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        //
-        StringBuilder sb1 = new StringBuilder();
 
-        // Выведем в TextView информацию о нажатом пункте меню
+        // make toast
+        StringBuilder sb1 = new StringBuilder();
         sb1.append("Item Menu");
         sb1.append("\r\n groupId: " + String.valueOf(item.getGroupId()));
         sb1.append("\r\n itemId: " + String.valueOf(item.getItemId()));
-
         Toast.makeText(this, sb1.toString(), Toast.LENGTH_LONG).show();
 
         // init all
-
         menu_item = item.getOrder();
 
         Thread t = new Thread(new Runnable() {
@@ -186,7 +194,7 @@ public class PuzzleBoxUno extends Activity implements View.OnTouchListener {
                 h.post(new Runnable() {
                     @Override
                     public void run() {
-                        pz = new Puzzle(iv, menu_item);
+                        pz = new Puzzle(PuzzleBoxUno.this,iv, menu_item, img);
                     }
                 });
             }
@@ -196,284 +204,97 @@ public class PuzzleBoxUno extends Activity implements View.OnTouchListener {
         return super.onOptionsItemSelected(item);
     }
 
-    private class Puzzle {        // Puzzle class start
+    //  ------------
+    void StartMain() {
 
-        Puzzle(ImageView iv, int diff) {            //  pz construct
+        // main_layout in 5 sec
+        Timer t = new Timer(false);
+        t.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                runOnUiThread(new Runnable() {
+                    public void run() {
 
-            fieldcolor = Color.GRAY;
-            itemcolor = Color.GREEN;
-            linecolor = Color.RED;
+                        // start view
+                        setContentView(R.layout.main_layout);
 
-            p = new Paint();
+                        mi = (ImageButton) findViewById(R.id.button_menu);
+                        tv = (TextView) findViewById(R.id.textView);
+                        iv = (ImageView) findViewById(R.id.imageView);
 
-            setDiff(diff);
-            setIv(iv);
+                        iv.setOnTouchListener(PuzzleBoxUno.this);
+                        iv.post(new Runnable() {
+                            public void run() {
+                                // code here   REFRESH
 
-            ///   init bitmap
-            b = Bitmap.createBitmap(this.iv.getWidth(), this.iv.getHeight(), Bitmap.Config.ARGB_8888);
-            c = new Canvas(b);
+                                ivw = iv.getWidth();
+                                ivh = iv.getHeight();
+                                iv.getLayoutParams().height = ivw;
+                                iv.getLayoutParams().width = ivw;
 
-            //iv.setImageBitmap(b);
+                                iv.requestLayout();
 
-            pw = this.iv.getWidth();
-            ph = this.iv.getHeight();
+                                pz = new Puzzle(PuzzleBoxUno.this, iv, 4, img);
+                                pz.selectGItem(PuzzleBoxUno.this, 1, 1, 1, 1);
+                                //iv.getLayoutParams().height = ivw;
+                                //iv.getLayoutParams().width = ivw;
+                            }
+                        });
 
-            mwh = Math.min(pw, ph);
-            itemlenght = (int) Math.ceil(mwh / diff);
+                        // start button
+                        mi.setOnClickListener(new OnClickListener() {  // buttonclick
+                            @Override
+                            public void onClick(View v) {
+                                iv.post(new Runnable() {
+                                    @Override   // works w/o
+                                    public void run() {
+                                        // menu layout
+                                        setContentView(R.layout.main_img);
+                                        iv_p = (ImageView) findViewById(R.id.imageView_puffy);
+                                        iv_k = (ImageView) findViewById(R.id.imageView_kitty);
+                                        tvp = (TextView) findViewById(R.id.textView_p);
+                                        tvk = (TextView) findViewById(R.id.textView_k);
 
-            grid = new Grid(diff);
+                                        tvp.setOnClickListener(new OnClickListener() {  // buttonclick
+                                            @Override
+                                            public void onClick(View v) {
+                                                tvp.post(new Runnable() {
+                                                    @Override   // works w/o
+                                                    public void run() {
 
-        }
+                                                        setImg(R.drawable.img01);
+                                                        StartMain();  // puffy res
 
-        int diff;
+                                                    }
+                                                });
+                                            }
+                                        });
 
-        void setDiff(int diff) {
-            this.diff = diff;
-        }
+                                        tvk.setOnClickListener(new OnClickListener() {  // buttonclick
+                                            @Override
+                                            public void onClick(View v) {
+                                                tvk.post(new Runnable() {
+                                                    @Override   // works w/o
+                                                    public void run() {
 
-        int fieldcolor;
-        int itemcolor;
-        int linecolor;
-        Bitmap b;
-        Paint p;
-        int pw;
-        int ph;
-        int mwh;
-        int itemlenght;
+                                                        setImg(R.drawable.img02); // kitty res
+                                                        StartMain();  // puffy res
 
-        Canvas c;
+                                                    }
+                                                });
+                                            }
+                                        });
 
-        public Canvas getCanvas() {
-            return c;
-        }
-
-        Grid grid;
-
-        public Grid getGrid() {
-            return grid;
-        }
-
-        ImageView iv;
-
-        void setIv(ImageView iv) { // old init
-            this.iv = iv;
-        }
-
-        void selectItem(int x, int y, int sx, int sy) {
-
-            selectGItem(x, y, sx, sy);
-
-            //    grid.initcoords(pz.diff);
-
-            //    grid.renderGrid();
-
-            //    selectGItem(x,y,sx,sy,pz.getGrid().getCoords());
-            //    grid.renderGrid(pz.getGrid().getCoords(),c);
-            //    selectGItem(x,y,sx,sy,grid.coords);
-            //    grid.renderGrid(grid.coords, c);
-
-        }
-
-        void selectGItem(int x, int y, int sx, int sy) {
-
-            int ex = 0;
-            int ey = 0;
-            int sex = 0;
-            int sey = 0;
-
-            GItem gitem_temp_e = null;
-            GItem gitem_temp_s = null;
-
-
-            for (int iw = 0; iw < diff; iw++) {
-                for (int ih = 0; ih < diff; ih++) {
-
-                    if (grid.coords[iw][ih].getRect_to().contains(x, y)) {   // end coords
-
-                        grid.coords[iw][ih].setBorder(1);
-                        gitem_temp_e = new GItem(grid.coords[iw][ih].item_num, grid.coords[iw][ih].item_w, grid.coords[iw][ih].item_h, grid.coords[iw][ih].rect_from, grid.coords[iw][ih].rect_to);
-                        ex = iw;
-                        ey = ih;
-
-                        //grid.renderToCanvas(getResources(), R.drawable.imgset, grid.coords[iw][ih],0);
-
-                    } else if (grid.coords[iw][ih].getRect_to().contains(sx, sy)) {    // start coords
-
-                        grid.coords[iw][ih].setBorder(2);
-                        gitem_temp_s = new GItem(grid.coords[iw][ih].item_num, grid.coords[iw][ih].item_w, grid.coords[iw][ih].item_h, grid.coords[iw][ih].rect_from, grid.coords[iw][ih].rect_to);
-                        sex = iw;
-                        sey = ih;
-
-                        //  grid.renderToCanvas(getResources(), R.drawable.imgset, grid.coords[iw][ih],0);
-
-                    } else {
-                        grid.coords[iw][ih].setBorder(0);
-                        grid.renderToCanvas(getResources(), R.drawable.imgset, grid.coords[iw][ih], 1);
+                                    }
+                                });
+                            }
+                        });
+                        // end
                     }
-                }
+                });
             }
-
-            if (gitem_temp_e != null && gitem_temp_s != null) {
-                grid.coords[ex][ey].rect_from = gitem_temp_s.rect_from;
-                grid.renderToCanvas(getResources(), R.drawable.imgset, grid.coords[ex][ey], 1);
-                grid.coords[sex][sey].rect_from = gitem_temp_e.rect_from;
-                grid.renderToCanvas(getResources(), R.drawable.imgset, grid.coords[sex][sey], 1);
-            }
-
-
-            iv.setImageBitmap(b);
-
-        }
-
-        class Grid {        //   Grid class
-            Grid(int diff) {    // constructor
-                coords = new GItem[diff][diff];
-                orcoords = new GItem[diff][diff];
-
-                initcoords(diff);
-
-            }
-
-            GItem[][] coords;
-            GItem[][] orcoords;
-            Bitmap bitmap;
-
-
-            void initcoords(int diff) {
-
-                int in = 0;
-
-                BitmapFactory.Options opt = new BitmapFactory.Options();
-                opt.inMutable = true;
-                bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.imgset, opt);
-
-                int sx, sy, fx, fy;
-                int ssx, ssy, ffx, ffy;
-
-                Rect rect_from;
-                Rect rect_to;
-
-                int bitmaplength = bitmap.getWidth() / diff;
-
-                for (int iw = 0; iw < diff; iw++) {
-                    for (int ih = 0; ih < diff; ih++) {
-                        in++;
-
-                        sx = iw * bitmaplength;
-                        sy = ih * bitmaplength;
-                        fx = (iw + 1) * bitmaplength;
-                        fy = (ih + 1) * bitmaplength;
-
-                        ssx = iw * itemlenght;
-                        ssy = ih * itemlenght;
-                        ffx = (iw + 1) * itemlenght;
-                        ffy = (ih + 1) * itemlenght;
-
-                        rect_from = new Rect(sx, sy, fx, fy);
-                        rect_to = new Rect(ssx, ssy, ffx, ffy);
-
-                        coords[iw][ih] = new GItem(in, iw, ih, rect_from, rect_to);
-
-                        if (orcoords[iw][ih] == null) {
-                            orcoords[iw][ih] = new GItem(in, iw, ih, rect_from, rect_to);
-                        }
-                    }
-                }
-
-                GItem gitem_temp_r1 = null;
-
-                int x1 = 0;
-                int y1 = 0;
-                int xx1 = 0;
-                int yy1 = 0;
-
-                int step = diff*diff;
-
-                for (int mstep = 0; mstep < step; mstep = mstep + 1) {
-
-
-                    x1 = (int)(Math.random()*100)*diff/100;
-                    y1 = (int)(Math.random()*100)*diff/100;
-                    xx1 = (int)(Math.random()*100)*diff/100;
-                    yy1 = (int)(Math.random()*100)*diff/100;
-
-                    gitem_temp_r1 = new GItem(0, 0, 0, coords[x1][y1].rect_from, coords[x1][y1].rect_to); // TODO  works!
-
-                    coords [x1][y1].rect_from = coords [xx1][yy1].rect_from;
-                    coords [xx1][yy1].rect_from = gitem_temp_r1.rect_from;
-
-                    gitem_temp_r1 = null;
-
-                }
-
-            }
-
-            void renderToCanvas(Resources res, int obj, GItem gitem, int pp) {
-
-                //   BitmapFactory.Options opt = new BitmapFactory.Options();
-                //   opt.inMutable = true;
-                //   Bitmap bitmap = BitmapFactory.decodeResource(res, obj, opt);
-
-                if (pp == 1) {
-                    c.drawBitmap(grid.bitmap, gitem.getRect_from(), gitem.getRect_to(), null);
-                } else {
-                    c.drawRect(gitem.getRect_to(), new Paint(Color.RED));
-                }
-                /*
-                    if(gitem.getBorder()>0){    // >0 - old
-                        c.drawRect(gitem.getRect_to(), new Paint(Color.YELLOW));
-                    //    c.drawBitmap(bitmap, gitem.getRect_from(), gitem.getRect_to(), null);
-                    }else {
-                    //    c.drawRect(gitem.getRect_to(), new Paint(Color.YELLOW));
-                        c.drawBitmap(bitmap, gitem.getRect_from(), gitem.getRect_to(), null);
-                    }
-                */
-            }
-
-        }
-
-        class GItem {
-
-        int item_w, item_h, item_num;
-        Rect rect_from, rect_to;
-
-        int border = 0;
-
-        public int getBorder() {
-            return border;
-        }
-
-        public void setBorder(int border) {
-            this.border = border;
-        }
-
-        public Rect getRect_from() {
-            return rect_from;
-        }
-
-        public Rect getRect_to() {
-            return rect_to;
-        }
-
-        public void setRect_from(Rect rect_from) {
-            this.rect_from = rect_from;
-        }
-
-        public void setRect_to(Rect rect_to) {
-            this.rect_to = rect_to;
-        }
-
-        GItem(int item_num, int item_w, int item_h, Rect rect_from, Rect rect_to) {
-            this.item_num = item_num;
-            this.item_w = item_w;
-            this.item_h = item_h;
-            this.rect_from = rect_from;
-            this.rect_to = rect_to;
-
-        }
+        }, 500);
     }
-
-    }   // Puzzle class ends
+    //  ---------------
 
 }  // PuzzleBoxUno ends
-
